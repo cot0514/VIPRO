@@ -5,55 +5,93 @@ uri = 'https://api.football-data.org/v4/'
 headers = { 'X-Auth-Token': '09158fc8680949dd8c7cb4644d5ee282' }
 
 def main():
-    select = input("리그 검색: 1, 팀 검색: 2, 선수 검색: 3\n")
+    select = input("리그 검색: 1, 팀 검색: 2\n")
     
     if select == '1':
         chooseLeague()
     elif select == '2':
         chooseTeam()
-    elif select == '3':
-        choosePerson()
     else:
         print("잘못된 입력입니다")
         main()
 
 def chooseLeague():
     uri_l = uri + "competitions"
-    name = input("검색하고자 하는 리그를 입력하세요: ")
-    tmp = []
     response = requests.get(uri_l, headers=headers)
+    tmp = []
+    i = 0
     for league in response.json()['competitions']:
-        val = name in league['name']
-        if val:
-            tmp.append([league['id'], league['name']])
+        tmp.append([league['id'], league['name'], league['code']])
+        print(str(i) + ": " + league['name'])
+        i = i + 1
+    
+    n = ""
+    while 1:
+        n = input("위 리그 중, 검색하고 싶은 리그의 번호를 고르시오: ")
+        if int(n) > 12 or int(n) < 0:
+            print("입력값이 잘못됐습니다.")
         else:
-            continue
-        
-    if len(tmp) > 1:
-        for tmps in tmp['name']:
-            print(tmps+'\n')
-        n = input("위 리그 중에서 검색하고 싶은 리그의 번호를 입력하세요: ")
-        print(tmp[n])
-        
-    elif len(tmp) == 1:
-        print(tmp)
-        
-    else:
-        print("검색 결과가 없습니다")
+            break
+    leagueInfo(tmp[int(n)])
     
     
 def chooseTeam():
     uri_t = uri + "teams?limit=200"
+    tmp = []
     name = input("검색하고자 하는 팀 이름을 입력하세요: ")
     response = requests.get(uri_t, headers=headers)
     for teams in response.json()['teams']:
-        if name == teams['name']:
-            uri_s = uri + "teams/" + str(teams['id'])
-            response = requests.get(uri_s, headers=headers)
-            print(response.json())
+        val = name in teams['name']
+        if val:
+            tmp.append([teams['name'], teams['id']])
+        else:
+            continue
     
+    idx = 0
+    if len(tmp) > 1:
+        for t in tmp:
+            print(str(idx) + ": " + t['name'])
+            n = input("위 팀 중에서 검색하고 싶은 팀의 번호를 고르시오")
+            print(tmp[n])
+    elif len(tmp) == 1:
+        print(tmp)
+    else:
+        print("잘못 입력하셨습니다")
+        chooseTeam()
     
-def choosePerson():
-    uri_p = uri + "persons?limit=1000"
-    
+def leagueInfo(tmp):
+    uri_i = uri + "competitions/" + str(tmp[0])
+    print("1: 순위 검색, 2: 참가 팀 검색, 3: 득점 랭킹 보기")
+    n = input()
+    if n == '1':
+        rank(uri_i + "/standings")
+    elif n == '2':
+        team_sc(uri_i + "/teams")
+    elif n == '3':
+        scorers(uri_i + "/scorers")
+    else:
+        print("잘못된 입력입니다.")
+        leagueInfo(tmp)
+
+def rank(uri_r):
+    year = input("검색하고 싶은 년도를 고르시오")
+    uri_r = uri_r + "?season=" + year
+    response = requests.get(uri_r, headers=headers)
+    for ranks in response.json()['standings']:
+        print(ranks)
+
+def team_sc(uri_e):
+    year = input("검색하고 싶은 년도를 고르시오")
+    uri_e = uri_e + "?season=" + year
+    response = requests.get(uri_e, headers=headers)
+    for teams in response.json()['teams']:
+        print(teams)
+        
+def scorers(uri_s):
+    year = input("검색하고 싶은 년도를 고르시오")
+    uri_s = uri_s + "?season=" + year
+    response = requests.get(uri_s, headers=headers)
+    for score in response.json()['scorers']:
+        print(score)
+
 main()
