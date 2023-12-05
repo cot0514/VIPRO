@@ -19,7 +19,7 @@ def chooseLeague():
     uri_l = uri + "competitions"
     response = requests.get(uri_l, headers=headers)
     tmp = []
-    i = 0
+    i = 1
     for league in response.json()['competitions']:
         tmp.append([league['id'], league['name'], league['code']])
         print(str(i) + ": " + league['name'])
@@ -28,11 +28,11 @@ def chooseLeague():
     n = ""
     while 1:
         n = input("위 리그 중, 검색하고 싶은 리그의 번호를 고르시오: ")
-        if int(n) > 12 or int(n) < 0:
+        if int(n) > 13 or int(n) < 1:
             print("입력값이 잘못됐습니다.")
         else:
             break
-    leagueInfo(tmp[int(n)])
+    leagueInfo(tmp[int(n)-1])
     
     
 def chooseTeam():
@@ -47,14 +47,15 @@ def chooseTeam():
         else:
             continue
     
-    idx = 0
+    idx = 1
     if len(tmp) > 1:
-        for t in tmp:
-            print(str(idx) + ": " + t['name'])
-            n = input("위 팀 중에서 검색하고 싶은 팀의 번호를 고르시오")
-            print(tmp[n])
+        for t, i in tmp:
+            print(str(idx) + ": " + t)
+            idx = idx + 1
+        n = input("위 팀 중에서 검색하고 싶은 팀의 번호를 고르시오: ")
+        teamMatch(tmp[int(n)-1])
     elif len(tmp) == 1:
-        print(tmp)
+        teamMatch(tmp[0])
     else:
         print("잘못 입력하셨습니다")
         chooseTeam()
@@ -93,5 +94,43 @@ def scorers(uri_s):
     response = requests.get(uri_s, headers=headers)
     for score in response.json()['scorers']:
         print(score)
+        
+def teamMatch(tmp):
+    print(tmp[0])
+    uri_m = uri + "teams/" + str(tmp[1])
+    response = requests.get(uri_m, headers=headers)
+    for team, team_i in response.json().items():
+        if team == 'area':
+            print('area: ', team_i['name'])
+            continue
+        elif team == 'name':
+            print(team + ": ", team_i)
+            continue
+        elif team == 'venue':
+            print(team + ": ", team_i)
+            continue
+        elif team == 'runningCompetitions':
+            if len(team_i) > 1:
+                rc = []
+                for n in team_i:
+                    rc.append(n['name'])
+                print('runningCompetitions: ', rc)
+                continue
+            print('runningCompetitions: ', team_i['name'])
+            continue
+        elif team == 'coach':
+            print('coach: ', team_i['name'])
+            continue
+        if team == "squad":
+            mem = team_i
+            print("squad: ")
+            for mems in mem:    
+                print(mems['position'], ": ", mems['name'])
+            break
+
+    
+
+
+
 
 main()
