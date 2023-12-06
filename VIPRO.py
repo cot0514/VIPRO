@@ -53,9 +53,9 @@ def chooseTeam():
             print(str(idx) + ": " + t)
             idx = idx + 1
         n = input("위 팀 중에서 검색하고 싶은 팀의 번호를 고르시오: ")
-        teamMatch(tmp[int(n)-1])
+        teamInfo(tmp[int(n)-1])
     elif len(tmp) == 1:
-        teamMatch(tmp[0])
+        teamInfo(tmp[0])
     else:
         print("잘못 입력하셨습니다")
         chooseTeam()
@@ -95,7 +95,7 @@ def scorers(uri_s):
     for score in response.json()['scorers']:
         print(score)
         
-def teamMatch(tmp):
+def teamInfo(tmp):
     print(tmp[0])
     uri_m = uri + "teams/" + str(tmp[1])
     response = requests.get(uri_m, headers=headers)
@@ -127,10 +127,55 @@ def teamMatch(tmp):
             for mems in mem:    
                 print(mems['position'], ": ", mems['name'])
             break
+        
+    uri_m = uri_m + "/matches"
+    teamMatch(uri_m, tmp[1])
 
-    
-
-
-
-
-main()
+def teamMatch(uri_m, id_t):
+    uri_mf = uri_m + "?status=FINISHED"
+    result = []
+    score = []
+    venue = []
+    response = requests.get(uri_mf, headers=headers)
+    for tag, info in response.json().items():
+        if tag == 'resultSet':
+            print('win: ', info['wins'])
+            print('draws: ', info['draws'])
+            print('losses: ', info['losses'])
+            
+        elif tag == 'matches':
+            for inf in info:
+                for tag_m, info_m in inf.items():
+                    if tag_m == 'homeTeam':
+                        if info_m['id'] == id_t:
+                            venue.append('H')
+                            continue
+                        else:
+                            venue.append('A')
+                            continue
+                        
+                    if tag_m == 'score':
+                        if info_m['winner'] == 'HOME_TEAM':
+                            if venue[-1] == 'H':
+                                result.append('W')
+                            else:
+                                result.append('L')
+                        elif info_m['winner'] == 'AWAY_TEAM':
+                            if venue[-1] == 'A':
+                                result.append('W')
+                            else:
+                                result.append('L')
+                        else:
+                            result.append('D')
+                                    
+                        sc = info_m['fullTime']
+                        if venue[-1] == 'H':
+                            score.append(sc['home'])
+                        else:
+                            score.append(sc['away'])
+    print(result)
+    print(score)
+    print(venue)
+            
+if __name__ == '__main__':
+    main()
