@@ -1,5 +1,8 @@
 import json
 import requests
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt
 
 uri = 'https://api.football-data.org/v4/'
 headers = { 'X-Auth-Token': '09158fc8680949dd8c7cb4644d5ee282' }
@@ -22,7 +25,7 @@ def chooseLeague():
     i = 1
     for league in response.json()['competitions']:
         tmp.append([league['id'], league['name'], league['code']])
-        print(str(i) + ": " + league['name'])
+        print(f'{ i }: { league["name"] }')
         i = i + 1
     
     n = ""
@@ -50,7 +53,7 @@ def chooseTeam():
     idx = 1
     if len(tmp) > 1:
         for t, i in tmp:
-            print(str(idx) + ": " + t)
+            print(f'{ idx }: { t }')
             idx = idx + 1
         n = input("위 팀 중에서 검색하고 싶은 팀의 번호를 고르시오: ")
         teamInfo(tmp[int(n)-1])
@@ -75,25 +78,69 @@ def leagueInfo(tmp):
         leagueInfo(tmp)
 
 def rank(uri_r):
-    year = input("검색하고 싶은 년도를 고르시오")
+    year = input("검색하고 싶은 년도를 고르시오: ")
     uri_r = uri_r + "?season=" + year
     response = requests.get(uri_r, headers=headers)
-    for ranks in response.json()['standings']:
-        print(ranks)
+    tables = response.json()['standings'][0]
+    col = ['name', 'pg', 'form', 'won', 'draw', 'lost', 'points']
+    ind = [x + 1 for x in range(20)]
+    con = []
+    for rank in tables['table']:
+        co = []
+        for tag, info in rank.items():
+            if tag == 'team':
+                co.append(info['name'])
+                continue
+            elif tag == 'playedGames':
+                co.append(info)
+                continue
+            elif tag == 'form':
+                co.append(info)
+                continue
+            elif tag == 'won':
+                co.append(info)
+                continue
+            elif tag == 'draw':
+                co.append(info)
+                continue
+            elif tag == 'lost':
+                co.append(info)
+                continue
+            elif tag == 'points':
+                co.append(info)
+                continue
+        con.append(co)
+        
+    df = pd.DataFrame(con, columns=col, index=ind)
+    print(df)
 
 def team_sc(uri_e):
-    year = input("검색하고 싶은 년도를 고르시오")
+    year = input("검색하고 싶은 년도를 고르시오: ")
     uri_e = uri_e + "?season=" + year
     response = requests.get(uri_e, headers=headers)
     for teams in response.json()['teams']:
         print(teams)
         
 def scorers(uri_s):
-    year = input("검색하고 싶은 년도를 고르시오")
+    year = input("검색하고 싶은 년도를 고르시오: ")
     uri_s = uri_s + "?season=" + year
     response = requests.get(uri_s, headers=headers)
+    col = ['name', 'team', 'match', 'goals', 'assists', 'penalties']
+    ind = [x + 1 for x in range(10)]
+    con = []
     for score in response.json()['scorers']:
-        print(score)
+        co = []
+        for tag, info in score.items():
+            if tag == 'player' or tag == 'team':
+                co.append(info['name'])
+                continue
+            elif tag == 'playedMatches' or tag == 'goals' or tag == 'assists' or tag == 'penalties':
+                co.append(info)
+                continue
+        con.append(co)
+    
+    df = pd.DataFrame(con, columns=col, index=ind)
+    print(df)
         
 def teamInfo(tmp):
     print(tmp[0])
@@ -101,31 +148,28 @@ def teamInfo(tmp):
     response = requests.get(uri_m, headers=headers)
     for team, team_i in response.json().items():
         if team == 'area':
-            print('area: ', team_i['name'])
+            print(f'area: { team_i["name"] }')
             continue
-        elif team == 'name':
-            print(team + ": ", team_i)
-            continue
-        elif team == 'venue':
-            print(team + ": ", team_i)
+        elif team == 'name' or team == 'venue':
+            print(f'{ team }: { team_i }')
             continue
         elif team == 'runningCompetitions':
             if len(team_i) > 1:
                 rc = []
                 for n in team_i:
                     rc.append(n['name'])
-                print('runningCompetitions: ', rc)
+                print(f'{ team }: { rc }')
                 continue
-            print('runningCompetitions: ', team_i['name'])
+            print(f'{ team }: { team_i["name"] }')
             continue
         elif team == 'coach':
-            print('coach: ', team_i['name'])
+            print(f'{ team }: { team_i["name"] }')
             continue
         if team == "squad":
             mem = team_i
-            print("squad: ")
+            print("squad")
             for mems in mem:    
-                print(mems['position'], ": ", mems['name'])
+                print(f'{ mems["position"] }: { mems["name"] }')
             break
         
     uri_m = uri_m + "/matches"
@@ -139,9 +183,7 @@ def teamMatch(uri_m, id_t):
     response = requests.get(uri_mf, headers=headers)
     for tag, info in response.json().items():
         if tag == 'resultSet':
-            print('win: ', info['wins'])
-            print('draws: ', info['draws'])
-            print('losses: ', info['losses'])
+            print(f'이번 시즌 경기 결과 {{win: { info["wins"] }, draw: { info["draws"] }, loss: { info["losses"] } }}')
             
         elif tag == 'matches':
             for inf in info:
