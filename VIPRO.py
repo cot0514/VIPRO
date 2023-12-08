@@ -65,13 +65,11 @@ def chooseTeam():
     
 def leagueInfo(tmp):
     uri_i = uri + "competitions/" + str(tmp[0])
-    print("1: 순위 검색, 2: 참가 팀 검색, 3: 득점 랭킹 보기")
+    print("1: 순위 검색, 2: 득점 랭킹 보기")
     n = input()
     if n == '1':
         rank(uri_i + "/standings")
     elif n == '2':
-        team_sc(uri_i + "/teams")
-    elif n == '3':
         scorers(uri_i + "/scorers")
     else:
         print("잘못된 입력입니다.")
@@ -114,13 +112,6 @@ def rank(uri_r):
     df = pd.DataFrame(con, columns=col, index=ind)
     print(df)
 
-def team_sc(uri_e):
-    year = input("검색하고 싶은 년도를 고르시오: ")
-    uri_e = uri_e + "?season=" + year
-    response = requests.get(uri_e, headers=headers)
-    for teams in response.json()['teams']:
-        print(teams)
-        
 def scorers(uri_s):
     year = input("검색하고 싶은 년도를 고르시오: ")
     uri_s = uri_s + "?season=" + year
@@ -131,8 +122,11 @@ def scorers(uri_s):
     for score in response.json()['scorers']:
         co = []
         for tag, info in score.items():
-            if tag == 'player' or tag == 'team':
+            if tag == 'player':
                 co.append(info['name'])
+                continue
+            elif tag == 'team':
+                co.append(info['tla'])
                 continue
             elif tag == 'playedMatches' or tag == 'goals' or tag == 'assists' or tag == 'penalties':
                 co.append(info)
@@ -177,47 +171,51 @@ def teamInfo(tmp):
 
 def teamMatch(uri_m, id_t):
     uri_mf = uri_m + "?status=FINISHED"
-    result = []
-    score = []
-    venue = []
+    col = ['league', 'date', 'home', 'away', 'home_sc', 'away_sc', 'result']
+    con = []
     response = requests.get(uri_mf, headers=headers)
     for tag, info in response.json().items():
         if tag == 'resultSet':
             print(f'이번 시즌 경기 결과 {{win: { info["wins"] }, draw: { info["draws"] }, loss: { info["losses"] } }}')
             
         elif tag == 'matches':
+            ind = [x + 1 for x in range(len(info))]
             for inf in info:
+                co = []
+                tmp = []
                 for tag_m, info_m in inf.items():
-                    if tag_m == 'homeTeam':
+                    if tag_m == 'competition':
+                        co.append(info_m['code'])
+                        continue
+                    elif tag_m == 'utcDate':
+                        co.append(info_m)
+                        continue
+                    elif tag_m == 'homeTeam' or tag_m == 'awayTeam':
+                        co.append(info_m['tla'])
                         if info_m['id'] == id_t:
-                            venue.append('H')
-                            continue
-                        else:
-                            venue.append('A')
-                            continue
-                        
-                    if tag_m == 'score':
+                            tmp.append(tag_m[0])
+                        continue
+                    elif tag_m == 'score':
+                        score = info_m['fullTime']
+                        co.append(score['home'])
+                        co.append(score['away'])
                         if info_m['winner'] == 'HOME_TEAM':
-                            if venue[-1] == 'H':
-                                result.append('W')
-                            else:
-                                result.append('L')
+                            if tmp[0] == 'h':
+                                co.append('Win')
+                            elif tmp[0] == 'a':
+                                co.append('Loss')
                         elif info_m['winner'] == 'AWAY_TEAM':
-                            if venue[-1] == 'A':
-                                result.append('W')
-                            else:
-                                result.append('L')
+                            if tmp[0] == 'h':
+                                co.append('Loss')
+                            elif tmp[0] == 'a':
+                                co.append('Win')
                         else:
-                            result.append('D')
-                                    
-                        sc = info_m['fullTime']
-                        if venue[-1] == 'H':
-                            score.append(sc['home'])
-                        else:
-                            score.append(sc['away'])
-    print(result)
-    print(score)
-    print(venue)
+                            co.append('Draw')
+                        continue
+                con.append(co)
+                    
+    df = pd.DataFrame(con, columns=col, index=ind)
+    print(df)
             
 if __name__ == '__main__':
     main()
